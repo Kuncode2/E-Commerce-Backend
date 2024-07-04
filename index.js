@@ -42,7 +42,7 @@ app.post("/upload",upload.single('product'),(req,res)=>{
 // Schema Creation 
 const Product = mongoose.model("Product",{
     id:{
-        type: String,
+        type: Number,
         required:true,
     },
     name:{
@@ -102,7 +102,7 @@ app.post('/addproduct',async (req,res)=>{
     console.log("Saved");
     res.json({
         success:true,
-        name:req.body.name
+        name:req.body.name,
     })
 })
 
@@ -118,7 +118,7 @@ app.post('/removeproduct',async(req,res)=>{
 })
 
 // Creating API for GETTING all Product
-app.get('/allproduct',async(req,res)=>{
+app.get('/allproducts',async(req,res)=>{
     let products = await Product.find({})
     console.log("All Product Fetched");
     res.send(products)
@@ -164,8 +164,8 @@ app.post('/signup',async(req,res)=>{
     })
 
     await user.save();
-    // tokens
 
+    // tokens
     const data = {
         user:{
             id:user.id
@@ -179,8 +179,8 @@ app.post('/signup',async(req,res)=>{
 app.post('/login',async(req,res)=>{
     let user = await Users.findOne({email:req.body.email}) 
     if(user){
-        const passcompare = req.body.password === user.password;
-        if(passcompare){
+        const passCompare = req.body.password === user.password;
+        if(passCompare){
             const data = {
                 user:{
                     id:user.id
@@ -202,6 +202,44 @@ app.post('/login',async(req,res)=>{
             errors:"Wrong email id"
         })
     }
+})
+
+// creating endpoint for newcollection data
+app.get('/newcollections',async(req,res)=>{
+    let products = await Product.find({})
+    let newcollection = products.slice(1).slice(-8)
+    console.log("Newcollection fetched");
+    res.send(newcollection)
+})
+
+// create endpoint for popular in women section
+app.get('/popularinwomen',async (req,res)=>{
+    let products = await Product.find({category:"women"})
+    let popular_in_women = products.slice(0,4)
+    console.log("popular in women fetched");
+    res.send(popular_in_women)
+})
+
+// creating middelware to fetch user\
+    const fetchUser = async(req,res,next)=>{
+        const token = req.header('auth-token');
+        if(!token){
+            res.status(401).send({errors:"Please authenticate using valid token"})
+        }
+        else{
+            try {
+                const data = jwt.verify(token,'secret_ecom')
+                req.user = data.user;
+                next()
+            } catch (error) {
+                res.status(401).send({errors:"please authenticate using a valid toekn"})
+            }
+        }
+    }
+
+// ned point for adding product in card data
+app.post('/addtocart',fetchUser,async(req,res)=>{
+    console.log(req.body,req.user);
 })
 
 app.listen(port,(error)=>{
